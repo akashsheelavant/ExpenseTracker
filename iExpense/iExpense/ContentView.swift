@@ -8,28 +8,60 @@
 import SwiftUI
 import Observation
 
-@Observable class User {
-    var firstName = "Bilbo"
-    var lastName = "Baggins"
+struct ExpenseItem: Identifiable, Codable  {
+    var id = UUID()
+    let name: String
+    let type: String
+    let amount: Double
 }
 
-struct SecondView: View {
-    @Environment(\.dismiss) var dismiss
-    
-    var body: some View {
-        Button("Dismiss") {
-            dismiss()
+@Observable
+class Expenses {
+    var items = [ExpenseItem]() {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(items) {
+                UserDefaults.standard.set(encoded, forKey: "Items")
+            }
         }
+    }
+    
+    init() {
+        if let savedItems = UserDefaults.standard.value(forKey: "Items") {
+            if let decodedItems = try? JSONDecoder().decode([ExpenseItem].self, from: savedItems as! Data) {
+                items = decodedItems
+                return
+            }
+        }
+        items = []
     }
 }
 
 struct ContentView: View {
-    @AppStorage("tapCount") private var tapCount = 0
+    @State private var expenses = Expenses()
+    @State private var showingAddExpense = false
     
     var body: some View {
-        Button("Tap count: \(tapCount)") {
-            tapCount += 1
+        NavigationStack {
+            List {
+                ForEach(expenses.items) { item in
+                    Text(item.name)
+                }
+                .onDelete(perform: removeItems)
+            }
+            .toolbar {
+                Button("Add Expense", systemImage: "plus") {
+                    showingAddExpense = true
+                }
+            }
+            .sheet(isPresented: $showingAddExpense, content: {
+                AddView(expenses: expenses)
+            })
+            .navigationTitle("iExpense")
         }
+    }
+    
+    func removeItems(at offsets: IndexSet) {
+        expenses.items.remove(atOffsets: offsets)
     }
 }
 
