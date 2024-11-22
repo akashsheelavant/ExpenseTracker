@@ -18,11 +18,15 @@ struct ExpenseItem: Identifiable, Codable  {
 
 @Observable
 class Expenses {
+    var personalExpenseItems = [ExpenseItem]()
+    var businessExpenseItems = [ExpenseItem]()
+    
     var items = [ExpenseItem]() {
         didSet {
             if let encoded = try? JSONEncoder().encode(items) {
                 UserDefaults.standard.set(encoded, forKey: "Items")
             }
+            initializeItems()
         }
     }
     
@@ -35,6 +39,11 @@ class Expenses {
         }
         items = []
     }
+    
+    private func initializeItems() {
+        self.personalExpenseItems = items.filter({ $0.type == "Personal" })
+        self.businessExpenseItems = items.filter({ $0.type == "Business" })
+    }
 }
 
 struct ContentView: View {
@@ -44,18 +53,41 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             List {
-                ForEach(expenses.items) { item in
-                    HStack {
-                        VStack(alignment: .leading, content: {
-                            Text(item.name)
-                                .font(.headline)
-                            Text(item.type)
-                        })
-                        Spacer()
-                        Text(item.amount, format:.currency(code: item.currencyCode))
+                if(!expenses.personalExpenseItems.isEmpty) {
+                    Section("Personal") {
+                        ForEach(expenses.personalExpenseItems) { item in
+                            HStack {
+                                VStack(alignment: .leading, content: {
+                                    Text(item.name)
+                                        .font(.headline)
+                                    Text(item.type)
+                                })
+                                Spacer()
+                                Text(item.amount, format:.currency(code: item.currencyCode))
+                                    .fontWeight(fontWeight(amount: item.amount))
+                            }
+                        }
+                        .onDelete(perform: removeItems)
                     }
                 }
-                .onDelete(perform: removeItems)
+                
+                if(!expenses.businessExpenseItems.isEmpty) {
+                    Section("Business") {
+                        ForEach(expenses.businessExpenseItems) { item in
+                            HStack {
+                                VStack(alignment: .leading, content: {
+                                    Text(item.name)
+                                        .font(.headline)
+                                    Text(item.type)
+                                })
+                                Spacer()
+                                Text(item.amount, format:.currency(code: item.currencyCode))
+                                    .fontWeight(fontWeight(amount: item.amount))
+                            }
+                        }
+                        .onDelete(perform: removeItems)
+                    }
+                }
             }
             .toolbar {
                 Button("Add Expense", systemImage: "plus") {
@@ -67,6 +99,15 @@ struct ContentView: View {
             })
             .navigationTitle("iExpense")
         }
+    }
+    
+    private func fontWeight(amount: Double) -> Font.Weight {
+        if(amount < 10) {
+            return .regular
+        } else if(amount >= 10 && amount < 100) {
+            return .medium
+        }
+        return .semibold
     }
     
     func removeItems(at offsets: IndexSet) {
