@@ -7,55 +7,28 @@
 
 import SwiftUI
 import Observation
-
-struct ExpenseItem: Identifiable, Codable  {
-    var id = UUID()
-    let name: String
-    let type: String
-    let amount: Double
-    let currencyCode: String
-}
-
-@Observable
-class Expenses {
-    var personalExpenseItems = [ExpenseItem]()
-    var businessExpenseItems = [ExpenseItem]()
-    
-    var items = [ExpenseItem]() {
-        didSet {
-            if let encoded = try? JSONEncoder().encode(items) {
-                UserDefaults.standard.set(encoded, forKey: "Items")
-            }
-            initializeItems()
-        }
-    }
-    
-    init() {
-        if let savedItems = UserDefaults.standard.value(forKey: "Items") {
-            if let decodedItems = try? JSONDecoder().decode([ExpenseItem].self, from: savedItems as! Data) {
-                items = decodedItems
-                return
-            }
-        }
-        items = []
-    }
-    
-    private func initializeItems() {
-        self.personalExpenseItems = items.filter({ $0.type == "Personal" })
-        self.businessExpenseItems = items.filter({ $0.type == "Business" })
-    }
-}
+import SwiftData
 
 struct ContentView: View {
-    @State private var expenses = Expenses()
+    
     @State private var showingAddExpense = false
+    @Environment(\.modelContext) var modelContext
+    
+    @Query(filter: #Predicate<ExpenseItem>{ item in
+        item.type == "Personal"
+    }, sort: \ExpenseItem.name) var personalExpenseItems: [ExpenseItem]
+    
+    @Query(filter: #Predicate<ExpenseItem>{ item in
+        item.type == "Business"
+    }, sort: \ExpenseItem.name) var businessExpenseItems: [ExpenseItem]
+    
     
     var body: some View {
         NavigationStack {
             List {
-                if(!expenses.personalExpenseItems.isEmpty) {
+                if(!personalExpenseItems.isEmpty) {
                     Section("Personal") {
-                        ForEach(expenses.personalExpenseItems) { item in
+                        ForEach(personalExpenseItems) { item in
                             HStack {
                                 VStack(alignment: .leading, content: {
                                     Text(item.name)
@@ -67,13 +40,13 @@ struct ContentView: View {
                                     .fontWeight(fontWeight(amount: item.amount))
                             }
                         }
-                        .onDelete(perform: removeItems)
+                        .onDelete(perform: removePersonalItems)
                     }
                 }
                 
-                if(!expenses.businessExpenseItems.isEmpty) {
+                if(!businessExpenseItems.isEmpty) {
                     Section("Business") {
-                        ForEach(expenses.businessExpenseItems) { item in
+                        ForEach(businessExpenseItems) { item in
                             HStack {
                                 VStack(alignment: .leading, content: {
                                     Text(item.name)
@@ -85,7 +58,7 @@ struct ContentView: View {
                                     .fontWeight(fontWeight(amount: item.amount))
                             }
                         }
-                        .onDelete(perform: removeItems)
+                        .onDelete(perform: removeBusinessItems)
                     }
                 }
             }
@@ -95,7 +68,7 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingAddExpense, content: {
-                AddView(expenses: expenses)
+                AddView()
             })
             .navigationTitle("iExpense")
         }
@@ -110,8 +83,16 @@ struct ContentView: View {
         return .semibold
     }
     
-    func removeItems(at offsets: IndexSet) {
-        expenses.items.remove(atOffsets: offsets)
+    func removePersonalItems(at offsets: IndexSet) {
+        for offset in offsets {
+            modelContext.delete(personalExpenseItems[offset])
+        }
+    }
+    
+    func removeBusinessItems(at offsets: IndexSet) {
+        for offset in offsets {
+            modelContext.delete(businessExpenseItems[offset])
+        }
     }
 }
 
