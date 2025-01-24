@@ -1,5 +1,9 @@
 # ExpenseTracker
-A project to demonstrate SwiftUI. This project iExpense is an expense tracker app that separates personal costs from business costs. At its core this is an app with a form (how much did you spend?) and a list (here are the amounts you spent).
+This project demonstrates SwiftUI along with SwiftData. 
+
+This project is an expense tracker app. At its core this is an app with a form (how much did you spend?) and a list (here are the amounts you spent).
+We can filter out the expenses to display either all, personal or business expenses. 
+A custom sort can be applied to sort the list either by name or by amount of expenses.
 
 
-![Simulator Screen Recording - iPhone 15 Pro - 2024-01-01 at 16 59 49](https://github.com/akashsheelavant/ExpenseTracker/assets/52631413/76e1e9fd-1c5a-4a26-92d8-ea589b05d53b)
+![Screen Recording 2025-01-24 at 3 31 43 PM](https://github.com/user-attachments/assets/d52e16f8-8b68-4786-bd0b-62e913037b82)
