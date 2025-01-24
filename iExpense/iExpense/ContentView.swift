@@ -12,86 +12,48 @@ import SwiftData
 struct ContentView: View {
     
     @State private var showingAddExpense = false
-    @Environment(\.modelContext) var modelContext
+    @State private var sortOrder = [
+        SortDescriptor(\ExpenseItem.name),
+        SortDescriptor(\ExpenseItem.amount)
+    ]
     
-    @Query(filter: #Predicate<ExpenseItem>{ item in
-        item.type == "Personal"
-    }, sort: \ExpenseItem.name) var personalExpenseItems: [ExpenseItem]
-    
-    @Query(filter: #Predicate<ExpenseItem>{ item in
-        item.type == "Business"
-    }, sort: \ExpenseItem.name) var businessExpenseItems: [ExpenseItem]
-    
+    private let filterOptions = ["All", "Personal", "Business"]
+    @State private var selectedFilterIndex = 0
     
     var body: some View {
         NavigationStack {
-            List {
-                if(!personalExpenseItems.isEmpty) {
-                    Section("Personal") {
-                        ForEach(personalExpenseItems) { item in
-                            HStack {
-                                VStack(alignment: .leading, content: {
-                                    Text(item.name)
-                                        .font(.headline)
-                                    Text(item.type)
-                                })
-                                Spacer()
-                                Text(item.amount, format:.currency(code: item.currencyCode))
-                                    .fontWeight(fontWeight(amount: item.amount))
-                            }
-                        }
-                        .onDelete(perform: removePersonalItems)
+            ExpenseItemView(expenseType: filterOptions[selectedFilterIndex], sortOrder: sortOrder)
+                .toolbar {
+                    Button("Add Expense", systemImage: "plus") {
+                        showingAddExpense = true
                     }
-                }
-                
-                if(!businessExpenseItems.isEmpty) {
-                    Section("Business") {
-                        ForEach(businessExpenseItems) { item in
-                            HStack {
-                                VStack(alignment: .leading, content: {
-                                    Text(item.name)
-                                        .font(.headline)
-                                    Text(item.type)
-                                })
-                                Spacer()
-                                Text(item.amount, format:.currency(code: item.currencyCode))
-                                    .fontWeight(fontWeight(amount: item.amount))
-                            }
-                        }
-                        .onDelete(perform: removeBusinessItems)
+                    
+                    Button(filterOptions[selectedFilterIndex] + " Expenses") {
+                        selectedFilterIndex += 1
+                        selectedFilterIndex %= filterOptions.count
                     }
+                    
+                    Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                        Picker("Sort", selection: $sortOrder) {
+                            Text("Sort by Name")
+                                .tag([
+                                    SortDescriptor(\ExpenseItem.name),
+                                    SortDescriptor(\ExpenseItem.amount)
+                                ])
+                            
+                            Text("Sort by Amount")
+                                .tag([
+                                    SortDescriptor(\ExpenseItem.amount),
+                                    SortDescriptor(\ExpenseItem.name)
+                                ])
+                        }
+                    }
+                    
                 }
-            }
-            .toolbar {
-                Button("Add Expense", systemImage: "plus") {
-                    showingAddExpense = true
-                }
-            }
-            .sheet(isPresented: $showingAddExpense, content: {
-                AddView()
-            })
-            .navigationTitle("iExpense")
-        }
-    }
-    
-    private func fontWeight(amount: Double) -> Font.Weight {
-        if(amount < 10) {
-            return .regular
-        } else if(amount >= 10 && amount < 100) {
-            return .medium
-        }
-        return .semibold
-    }
-    
-    func removePersonalItems(at offsets: IndexSet) {
-        for offset in offsets {
-            modelContext.delete(personalExpenseItems[offset])
-        }
-    }
-    
-    func removeBusinessItems(at offsets: IndexSet) {
-        for offset in offsets {
-            modelContext.delete(businessExpenseItems[offset])
+                .sheet(isPresented: $showingAddExpense, content: {
+                    AddView()
+                })
+                .navigationTitle("iExpense")
         }
     }
 }

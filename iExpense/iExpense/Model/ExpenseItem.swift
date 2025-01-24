@@ -10,14 +10,12 @@ import SwiftData
 
 @Model
 class ExpenseItem {
-    var id = UUID()
-    let name: String
-    let type: String
-    let amount: Double
-    let currencyCode: String
+    var name: String
+    var type: String
+    var amount: Double
+    var currencyCode: String
     
-    init(id: UUID = UUID(), name: String, type: String, amount: Double, currencyCode: String) {
-        self.id = id
+    init(name: String, type: String, amount: Double, currencyCode: String) {
         self.name = name
         self.type = type
         self.amount = amount
